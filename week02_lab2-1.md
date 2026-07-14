@@ -642,10 +642,124 @@ void main() {
 
 **บันทึกผลการทดลอง: บันทึกโค้ดคำสั่งที่ได้**
 ```dart
-// บันทึกโค้ดในส่วนนี้
+void main() {
+  List<Map<String, dynamic>> students = [
+    {"name": "สมชาย",  "gpa": 3.75, "year": 3, "faculty": "วิศวกรรม"},
+    {"name": "สมหญิง", "gpa": 2.50, "year": 1, "faculty": "วิทยาศาสตร์"},
+    {"name": "สมศักดิ์","gpa": 3.10, "year": 2, "faculty": "วิศวกรรม"},
+    {"name": "สมใจ",  "gpa": 1.80, "year": 4, "faculty": "บริหาร"},
+    {"name": "สมปอง", "gpa": 3.50, "year": 2, "faculty": "วิทยาศาสตร์"},
+    {"name": "สมศรี", "gpa": 2.90, "year": 3, "faculty": "บริหาร"},
+  ];
 
+  // === where() — กรองนักศึกษาที่ GPA >= 3.0 ===
+  print("=== นักศึกษาที่ GPA >= 3.0 ===");
+  var honorStudents = students
+      .where((s) => (s["gpa"] as double) >= 3.0)
+      .toList();
+  for (var s in honorStudents) {
+    print("  ${s["name"]}: ${s["gpa"]}");
+  }
+
+  // === map() — แปลงเป็น String รายงาน ===
+  print("\n=== รายงานนักศึกษา ===");
+  var report = students
+      .map((s) => "${s["name"]} (${s["faculty"]}) GPA: ${s["gpa"]}")
+      .toList();
+  report.forEach(print);
+
+  // === sort() + reduce() ===
+  print("\n=== วิเคราะห์คะแนน ===");
+  List<double> gpas = students.map((s) => s["gpa"] as double).toList();
+
+  double maxGpa = gpas.reduce((a, b) => a > b ? a : b);
+  double minGpa = gpas.reduce((a, b) => a < b ? a : b);
+  double avgGpa = gpas.reduce((a, b) => a + b) / gpas.length;
+
+  print("GPA สูงสุด: $maxGpa");
+  print("GPA ต่ำสุด: $minGpa");
+  print("GPA เฉลี่ย: ${avgGpa.toStringAsFixed(2)}");
+
+  // === any() และ every() ===
+  bool anyFailing = students.any((s) => (s["gpa"] as double) < 2.0);
+  bool allPassing = students.every((s) => (s["gpa"] as double) >= 2.0);
+  print("มีนักศึกษาที่ GPA < 2.0: $anyFailing");
+  print("ทุกคน GPA >= 2.0: $allPassing");
+
+  // =========================================================================
+  // เพิ่มเติมส่วนที่โจทย์ต้องการ
+  // =========================================================================
+  print("\n=== ค้นหาและจัดกลุ่มข้อมูล (ฟังก์ชันเพิ่มเติม) ===");
+  
+  // 1. ทดสอบใช้งาน findTopStudentByFaculty
+  String targetFaculty = "วิทยาศาสตร์";
+  String? topStudent = findTopStudentByFaculty(students, targetFaculty);
+  print("นักศึกษาที่มี GPA สูงสุดในคณะ $targetFaculty คือ: ${topStudent ?? 'ไม่พบข้อมูล'}");
+
+  // 2. ทดสอบใช้งาน groupByFaculty
+  print("\n=== จัดกลุ่มนักศึกษาตามคณะ ===");
+  Map<String, List<Map<String, dynamic>>> groupedData = groupByFaculty(students);
+  groupedData.forEach((faculty, list) {
+    print("คณะ $faculty:");
+    for (var s in list) {
+      print("  - ${s['name']} (GPA: ${s['gpa']})");
+    }
+  });
+
+  // 3. ใช้ sort() เรียงนักศึกษาตาม GPA จากสูงไปต่ำ แล้วพิมพ์ 3 อันดับแรก
+  print("\n=== นักศึกษาที่มี GPA สูงสุด 3 อันดับแรก ===");
+  // ใช้การ .toList() ซ้อน เพื่อไม่ให้ไปเรียงสลับตำแหน่งใน List ตัวแปรต้นฉบับ (students)
+  var sortedStudents = List<Map<String, dynamic>>.from(students);
+  sortedStudents.sort((a, b) => (b["gpa"] as double).compareTo(a["gpa"] as double));
+
+  // ดึงข้อมูล 3 อันดับแรกโดยใช้ .take(3)
+  var topThree = sortedStudents.take(3);
+  int rank = 1;
+  for (var s in topThree) {
+    print("อันดับ $rank: ${s["name"]} (คณะ ${s["faculty"]}) GPA: ${s["gpa"]}");
+    rank++;
+  }
+}
+
+// -------------------------------------------------------------------------
+// ฟังก์ชันที่เพิ่มเข้ามาตามเงื่อนไขโจทย์
+// -------------------------------------------------------------------------
+
+/// คืนชื่อนักศึกษาที่ GPA สูงสุดในคณะที่ระบุ
+String? findTopStudentByFaculty(List<Map<String, dynamic>> students, String faculty) {
+  // กรองเอาเฉพาะนักศึกษาในคณะที่ต้องการ
+  var facultyStudents = students.where((s) => s["faculty"] == faculty).toList();
+  
+  if (facultyStudents.isEmpty) return null;
+
+  // ใช้ reduce เปรียบเทียบหาคนที่มี GPA สูงที่สุด
+  var topStudent = facultyStudents.reduce((a, b) => 
+    (a["gpa"] as double) > (b["gpa"] as double) ? a : b
+  );
+  
+  return topStudent["name"];
+}
+
+/// จัดกลุ่มนักศึกษาตามคณะ คืนค่ากลับมาเป็น Map<String, List>
+Map<String, List<Map<String, dynamic>>> groupByFaculty(List<Map<String, dynamic>> students) {
+  Map<String, List<Map<String, dynamic>>> map = {};
+  
+  for (var student in students) {
+    String faculty = student["faculty"];
+    // ถ้ายังไม่มี Key ของคณะนี้ใน Map ให้สร้าง List ว่างรอก่อน
+    if (!map.containsKey(faculty)) {
+      map[faculty] = [];
+    }
+    // เพิ่มข้อมูลนักศึกษาลงในคณะนั้นๆ
+    map[faculty]!.add(student);
+  }
+  
+  return map;
+}
 
 ```
+<img width="1912" height="978" alt="image" src="https://github.com/user-attachments/assets/dce554ab-16b6-4447-8487-64875ced7167" />
+
 ---
 
 ## ส่วนที่ 3 — ทฤษฎีและการทดลอง: OOP
